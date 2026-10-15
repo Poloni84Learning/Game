@@ -1,15 +1,15 @@
 # Kế hoạch phát triển Cá Ngựa Chiến Thần
 
-Ngày đánh giá: 11/10/2026. Phạm vi: bản web hot-seat 2–4 người, tiếng Việt, chạy trên PC và mobile.
+Ngày đánh giá: 11/10/2026 (cập nhật asset 14/10/2026). Phạm vi: bản web hot-seat 2–4 người, tiếng Việt, chạy trên PC và mobile.
 
 ## 1. Hiện trạng đã kiểm chứng
 
 - Stack: TypeScript strict, Vite, Canvas 2D, DOM/CSS overlay, Web Audio; không có dependency runtime trong package.json.
 - Engine tách khỏi UI; đã có di chuyển, giao tranh, kỹ năng, cộng hưởng, lõi, EXP, vật phẩm và auto-play cơ bản.
 - UI đã có chọn số người, draft tộc, chọn phong cách hero, HUD, giao tranh, chọn lõi và màn thắng.
-- Sprite có bộ v2 và ba phong cách hero v3; không cần làm lại toàn bộ art để ra bản chơi thử.
-- `npm test`: 36 mục test pass (35 unit test và một file smoke). Smoke seed 12345 kết thúc ở lượt 101, seed 999 ở lượt 111. Đây là số lượt engine, không phải thời lượng chơi thực tế.
-- `npm run build` và `npx --no-install tsc --noEmit`: pass.
+- Sprite: bộ zcode (đổi tên từ v4, độ phân giải gốc 2×) — 146 asset / 373 frame, PNG gom theo batch `assets/zcode/png/<nhãn ngày>/`, chi tiết trong ASSET_ZCODE.md. Đã có batch Văn hoá Việt 14/10/2026 (V01–V03) chưa gắn vào gameplay.
+- `npm test`: 38/40 mục pass; hai test fail là K03 punishingLight (thiết kế v5 chưa chuyển xong, lỗi có sẵn, không do asset).
+- `npm run build` và typecheck: pass sau đổi tên zcode (JS 320.09 kB / gzip 56.15 kB).
 - GDD ghi 110 test Vitest, trong khi mã hiện tại dùng Node test runner. Không tìm thấy BALANCE.md được GDD tham chiếu.
 - Chưa kiểm chứng tương tác trực tiếp trong browser, chất lượng hiển thị mobile hoặc cân bằng thực tế. Build pass không chứng minh các phần này.
 

@@ -1,5 +1,5 @@
-/** Native pixel-art source for the 2x asset set. No image resampling, no runtime deps.
- * Run: node tools/gen_assets_v4.mjs. Outputs matrices, PNGs and a contact sheet.
+/** Native pixel-art source for the zcode asset set. No image resampling, no runtime deps.
+ * Run: node tools/gen_assets_zcode.mjs. Outputs matrices, PNGs and contact sheets.
  * Every contour is drawn at the target resolution. Old v1/v2/v3 sources are retained.
  */
 import fs from 'node:fs';
@@ -9,8 +9,34 @@ import { coreIconsV5 } from './core_icons_v5.mjs';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = path.join(ROOT, 'assets/v4');
+const OUT = path.join(ROOT, 'assets/zcode');
 fs.mkdirSync(path.join(OUT, 'png'), { recursive: true });
+
+// PNGs are filed under assets/zcode/png/<label>/ by authoring batch, not regeneration day.
+// The registry pins each asset id to its folder label; BATCH_SEEDS route new ids into
+// dated topic folders, unknown ids fall back to the run date. A deleted registry rebuilds.
+const DATES_FILE = path.join(OUT, 'ASSET_DATES.json');
+const now = new Date();
+const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+const firstRun = !fs.existsSync(DATES_FILE);
+const assetDates = firstRun ? {} : JSON.parse(fs.readFileSync(DATES_FILE, 'utf8'));
+// Seeds backdate the pre-registry sets (base pack 11/10/2026, core icons + custom hero 14/10/2026).
+const BATCH_SEEDS = [
+  [/^V\d{2}$/, '2026-10-14-van-hoa-viet'],
+  [/^K\d{2}$|^H_CUSTOM_01$/, '2026-10-14'],
+];
+const dateFor = id => {
+  if (!assetDates[id]) {
+    const seed = BATCH_SEEDS.find(([re]) => re.test(id));
+    assetDates[id] = seed ? seed[1] : (firstRun ? '2026-10-11' : todayStr);
+  }
+  return assetDates[id];
+};
+// Drop stale flat PNGs left from before the date-folder layout; date subdirs are kept.
+for (const f of fs.readdirSync(path.join(OUT, 'png'))) {
+  const p = path.join(OUT, 'png', f);
+  if (f.endsWith('.png') && fs.statSync(p).isFile()) fs.rmSync(p);
+}
 const colors = {
   ink: '#151e29', edge: '#293343', shadow: '#323e4b', slate: '#495669', stone: '#667388',
   silver: '#98a8b9', steel: '#c4d2db', white: '#edf1dc', goldDark: '#795237', gold: '#ba8748',
@@ -50,7 +76,7 @@ class Art {
   rows() { return this.p.map(r=>r.join('')); }
 }
 const assets = [];
-const add=(id,frames)=>{ assets.push({id,frames:frames.map(a=>a.rows())}); frames.forEach((a,i)=>png(a,path.join(OUT,'png',`${id}_${i+1}.png`))); };
+const add=(id,frames)=>{ assets.push({id,frames:frames.map(a=>a.rows())}); const dir=path.join(OUT,'png',dateFor(id)); fs.mkdirSync(dir,{recursive:true}); frames.forEach((a,i)=>png(a,path.join(dir,`${id}_${i+1}.png`))); };
 const rng = (seed) => () => { seed=(Math.imul(seed,1664525)+1013904223)>>>0; return seed/4294967296; };
 
 // Bevelled, quiet ground: broad light clusters, authored cracks, sparse vegetation.
@@ -178,6 +204,164 @@ function hero(tribe,cls,style,frame){
 for(const [style,start] of [['armor',21],['cloak',41],['chibi',61]])for(let c=0;c<4;c++)for(let t=0;t<4;t++)add(`H${start+c*4+t}`,Array.from({length:4},(_,f)=>hero(tribes[t],classes[c],style,f)));
 for(let t=0;t<4;t++)for(let c=0;c<4;c++)add(`H${String(1+t*4+c).padStart(2,'0')}`,Array.from({length:4},(_,f)=>hero(tribes[t],classes[c],'armor',f)));
 
+// Custom Elf Mage variant - Moonlight Elf Mage (blue robes instead of green)
+function moonlightElfMage(frame){
+  const a = new Art(32);
+  const bob = frame === 1 ? 1 : 0;
+  
+  // Cape behind character (for mage)
+  a.poly([[11,13],[21,13],[25,28],[8,28]], 'ink');
+  a.poly([[12,14],[20,14],[23,27],[10,26]], 'iceDark'); // dark blue robes
+  a.line(12,16, 10, 25, 'ice');
+  a.line(19,17, 22, 25, 'ice');
+  
+  // Boots
+  a.rect(11, 23, 5, 6 - bob, 'ink');
+  a.rect(17, 23, 5, 6 - bob, 'ink');
+  a.rect(12, 24, 3, 3 - bob, '#323e4b'); // shadow
+  a.rect(18, 24, 3, 3 - bob, '#323e4b'); // shadow
+  
+  // Body torso
+  const body = new Art(32);
+  
+  // Shoulders and hands
+  body.poly([[10,13],[20,13],[24,17],[22,21],[20,20],[20,25],[11,25],[11,20],[9,21],[6,18]], 'ink');
+  body.poly([[11,14],[19,14],[21,17],[20,22],[18,25],[12,24],[10,17]], 'ice');
+  body.rect(12, 15, 7, 6, 'iceLight');
+  body.rect(17, 16, 2, 7, 'ice');
+  body.line(12, 15, 16, 15, 'iceWhite');
+  
+  // Arms
+  body.rect(7, 17, 3, 4, 'skinDark');
+  body.rect(7, 17, 2, 2, 'skin');
+  body.rect(21, 18, 3, 4, 'skinDark');
+  body.rect(21, 18, 2, 2, 'skinLight');
+  
+  // Mage robes at bottom (BLUE variant)
+  body.poly([[11,20],[20,20],[23,27],[9,27]], 'iceDark');
+  body.line(12,20, 11, 25, 'iceLight');
+  body.line(19,20, 20, 25, 'ice');
+  body.line(10,27, 22, 27, 'honey'); // gold trim
+  
+  // Robe ornament (crystal star pattern)
+  body.rect(14, 15, 2, 6, 'gold');
+  body.dot(15, 17, 'cream');
+  
+  // Face/Head area
+  const headY = 4;
+  body.poly([[12,headY],[18,headY],[21,headY+3],[20,11],[17,13],[12,12],[10,8],[10,headY+3]], 'ink');
+  body.rect(12, headY+2, 7, 6, 'skin');
+  body.rect(12, headY+2, 2, 4, 'skinLight');
+  body.rect(18, headY+3, 2, 5, 'skinDark');
+  body.line(13, 11, 17, 11, 'skinDark');
+  
+  // ELF EARS (pointed ears characteristic)
+  body.poly([[10,7],[7,5],[8,10],[11,10]], 'skinDark');
+  body.poly([[20,7],[24,5],[22,10],[20,10]], 'skin');
+  body.dot(22, 7, 'skinLight'); // ear highlight
+  
+  // LONG ELVEN HAIR (silver/blue for moonlight elf)
+  body.poly([[10,6],[11,3],[17,2],[20,4],[20,7],[17,5],[13,5],[11,8]], 'purpleDark');
+  body.line(12, 3, 16, 3, 'purpleLight'); // silver highlight
+  body.rect(11, 5, 9, 1, 'blue'); // blue strip in hair
+  
+  // Add eyes
+  body.dot(13, 8, 'ink');
+  body.dot(17, 8, 'ink');
+  body.dot(13, 7, 'white'); // white highlight
+  
+  a.blit(body, 0, bob);
+  
+  // MAGIC STAFF (signature weapon for mage) - BLUE VARIANT
+  // Staff shaft
+  a.line(27, 9, 25, 29, 'ink', 3);
+  a.line(28, 10, 26, 28, 'woodLight'); // wood staff
+  
+  // Crystal orb at top of staff (CYAN/MAGIC color)
+  a.poly([[28,1],[31,5],[30,9],[27,11],[24,8],[24,5]], 'ink');
+  a.poly([[28,2],[30,5],[29,8],[27,9],[25,7],[25,5]], 'cyan'); // cyan magic orb
+  a.line(28, 3, 26, 6, 'cyanLight'); // glow
+  body.dot(28, 8, 'cyanDark'); // base
+  
+  // Magic glow particles around crystal
+  body.dot(22, 3, 'cyan');
+  body.dot(30, 0, 'white');
+  
+  return a;
+}
+add('H_CUSTOM_01', Array.from({length: 4}, (_, f) => moonlightElfMage(f)));
+
+// Văn hoá Việt batch (14/10/2026): nón lá warrior, Đông Sơn bronze drum, lotus.
+function nonLaWarrior(frame){
+  const a=new Art(32), bob=frame===1?1:0, stepL=frame===2?1:0, stepR=frame===3?1:0;
+  // trắng quần: white trousers under the split hem, dark feet
+  a.rect(11,24,5,5-stepL,'ink').rect(17,24,5,5-stepR,'ink');
+  a.rect(12,25,3,3-stepL,'white').rect(18,25,3,3-stepR,'white');
+  a.rect(16,24,1,3,'white');
+  a.rect(10,28-stepL,6,3,'ink').rect(17,28-stepR,6,3,'ink').line(11,28-stepL,14,28-stepL,'woodLight').line(18,28-stepR,21,28-stepR,'woodLight');
+  const body=new Art(32);
+  // face under the hat brim
+  body.rect(11,9,9,5,'ink').rect(12,10,7,3,'skin').rect(12,10,2,2,'skinLight').rect(18,10,1,3,'skinDark');
+  body.dot(13,11,'ink').dot(17,11,'ink');
+  // áo dài: long split-hem tunic, gold collar, belt and hem trim
+  body.poly([[10,12],[21,12],[24,17],[23,28],[17,28],[16,23],[15,28],[8,28],[7,17]],'ink');
+  body.poly([[11,13],[20,13],[22,17],[21,26],[17,26],[16,22],[14,26],[10,26],[9,17]],'red');
+  body.rect(12,14,7,6,'redLight');
+  body.line(13,13,16,16,'gold').line(19,13,16,16,'gold');
+  body.line(11,13,20,13,'redWhite');
+  body.rect(9,20,13,2,'goldDark').rect(10,20,11,1,'gold').dot(15,20,'cream');
+  body.line(10,27,14,27,'gold').line(17,27,21,27,'gold');
+  // left sleeve and hand
+  body.rect(6,15,4,7,'ink').rect(7,15,3,6,'red').rect(7,20,3,2,'skinDark').rect(7,20,2,1,'skin');
+  // nón lá: conical straw hat, light from top-left
+  body.poly([[5,10],[16,2],[27,10]],'ink');
+  body.poly([[6,9],[16,3],[16,9]],'sandLight');
+  body.poly([[16,3],[26,9],[16,9]],'sand');
+  body.line(8,7,13,4,'sandWhite');
+  body.line(5,9,27,9,'sandDark');
+  body.dot(16,2,'gold');
+  a.blit(body,0,bob);
+  // giáo: spear with steel leaf head, gold ferrule and red tassel
+  a.poly([[27,0],[30,4],[27,6],[24,4]],'ink').poly([[27,1],[29,4],[27,5],[25,4]],'steel').line(27,1,27,4,'white');
+  a.line(27,6,27,29,'ink',3).line(27,7,27,28,'woodLight');
+  a.rect(24,6,7,1,'gold');
+  a.line(25,7,25,10,'red').line(29,7,29,9,'redLight');
+  a.rect(25,15,3,4,'skinDark').rect(25,15,2,3,'skin');
+  return a;
+}
+add('V01',Array.from({length:4},(_,f)=>nonLaWarrior(f)));
+
+// Trống đồng Đông Sơn: bronze with patina, face star, sawtooth bands.
+add('V02',[(()=>{
+  const a=new Art(32);
+  a.oval(16,8,13,5,'ink').oval(16,8,11,4,'greenDark').oval(16,8,10,3,'green');
+  for(let i=0;i<12;i++){const t=i*Math.PI/6;a.dot(Math.round(16+Math.cos(t)*9),Math.round(8+Math.sin(t)*2),'honey');}
+  const pts=[];for(let i=0;i<16;i++){const t=-Math.PI/2+i*Math.PI/8,rr=i%2?1.5:4;pts.push([Math.round(16+Math.cos(t)*rr),Math.round(8+Math.sin(t)*2)]);}
+  a.poly(pts,'goldDark');const inner=pts.map(([x,y])=>[Math.round(16+(x-16)*.6),Math.round(8+(y-8)*.6)]);a.poly(inner,'honey').dot(16,8,'cream');
+  a.poly([[3,11],[29,11],[25,17],[7,17]],'ink').poly([[5,12],[27,12],[24,16],[8,16]],'green');
+  for(let x=7;x<21;x+=4)a.poly([[x,12],[x+2,14],[x+4,12]],'gold');
+  a.line(5,15,27,15,'goldDark');
+  a.rect(7,17,18,4,'ink').rect(8,18,16,3,'greenDark').line(9,18,23,18,'green');
+  a.poly([[7,21],[25,21],[28,27],[4,27]],'ink').poly([[8,22],[24,22],[26,26],[6,26]],'green');
+  for(let x=9;x<19;x+=4)a.poly([[x,23],[x+2,25],[x+4,23]],'honey');
+  a.oval(16,27,12,3,'ink').oval(16,27,10,2,'greenDark');
+  a.line(6,6,12,5,'greenLight');
+  return a;
+})()]);
+
+// Hoa sen: five petals on a leaf base.
+add('V03',[(()=>{
+  const a=new Art(32);
+  a.poly([[6,14],[10,8],[14,13],[13,21],[7,20]],'ink').poly([[7,14],[10,9],[13,13],[12,20],[8,19]],'redLight');
+  a.poly([[26,14],[22,8],[18,13],[19,21],[25,20]],'ink').poly([[25,14],[22,9],[19,13],[20,20],[24,19]],'redLight');
+  a.poly([[10,10],[13,4],[16,3],[19,4],[22,10],[21,22],[11,22]],'ink').poly([[11,10],[13,5],[16,4],[19,5],[21,10],[20,21],[12,21]],'red');
+  a.line(12,8,14,6,'redWhite').line(15,5,17,5,'redWhite');
+  a.poly([[8,20],[12,17],[16,21],[20,17],[24,20],[22,25],[10,25]],'ink').poly([[9,20],[12,18],[16,21],[20,18],[23,20],[21,24],[11,24]],'redLight');
+  a.poly([[4,24],[10,21],[16,24],[22,21],[28,24],[24,28],[8,28]],'ink').poly([[6,24],[12,22],[16,24],[21,22],[26,24],[23,27],[9,27]],'green');
+  a.line(7,24,12,23,'greenLight').dot(24,24,'greenLight');
+  return a;
+})()]);
+
 // Shared icon vocabulary: real objects, 1px outlines, directional material light.
 function shield(a,cx=16,cy=15,accent='blue'){
   a.poly([[cx-10,cy-9],[cx,cy-12],[cx+10,cy-9],[cx+9,cy+4],[cx,cy+12],[cx-9,cy+4]],'ink').poly([[cx-8,cy-8],[cx,cy-10],[cx+8,cy-8],[cx+7,cy+3],[cx,cy+9],[cx-7,cy+3]],'gold');
@@ -258,9 +442,10 @@ const packRow = row => {
 const unpackRow = row => {let out='';for(let i=0;i<row.length;i+=2)out+=row[i+1].repeat(row.charCodeAt(i)-32);return out;};
 const packed=assets.map(a=>[a.id,a.frames.map(f=>f.map(packRow))]);
 for(let i=0;i<assets.length;i++)for(let f=0;f<assets[i].frames.length;f++)for(let y=0;y<assets[i].frames[f].length;y++)if(unpackRow(packed[i][1][f][y])!==assets[i].frames[f][y])throw new Error(`RLE mismatch ${assets[i].id}`);
-const source=`// Generated by tools/gen_assets_v4.mjs — native 2x pixel art, lossless row RLE.\nimport type { AssetDef } from './assets.ts';\nexport const PALETTE_V4: Record<string, string> = ${JSON.stringify(PAL,null,2)};\nconst PACKED: [string, string[][]][] = ${JSON.stringify(packed)};\nfunction rowDecode(row: string): string {\n  let out = '';\n  for (let i = 0; i < row.length; i += 2) out += row[i + 1].repeat(row.charCodeAt(i) - 32);\n  return out;\n}\nexport const ASSETS_V4: AssetDef[] = PACKED.map(([id, frames]) => ({id, frames: frames.map(f => f.map(rowDecode))}));\n`;
-fs.writeFileSync(path.join(ROOT,'src/data/gfx/assets_v4.ts'),source);
-fs.writeFileSync(path.join(OUT,'manifest.json'),JSON.stringify({version:4,tile:48,hero:32,icon:32,pen:96,colors:Object.keys(PAL).length,assets:assets.map(a=>({id:a.id,width:a.frames[0][0].length,height:a.frames[0].length,frames:a.frames.length}))},null,2));
+const source=`// Generated by tools/gen_assets_zcode.mjs — native 2x pixel art, lossless row RLE.\nimport type { AssetDef } from './assets.ts';\nexport const PALETTE_ZCODE: Record<string, string> = ${JSON.stringify(PAL,null,2)};\nconst PACKED: [string, string[][]][] = ${JSON.stringify(packed)};\nfunction rowDecode(row: string): string {\n  let out = '';\n  for (let i = 0; i < row.length; i += 2) out += row[i + 1].repeat(row.charCodeAt(i) - 32);\n  return out;\n}\nexport const ASSETS_ZCODE: AssetDef[] = PACKED.map(([id, frames]) => ({id, frames: frames.map(f => f.map(rowDecode))}));\n`;
+fs.writeFileSync(path.join(ROOT,'src/data/gfx/assets_zcode.ts'),source);
+fs.writeFileSync(DATES_FILE, JSON.stringify(assetDates, null, 2));
+fs.writeFileSync(path.join(OUT,'manifest.json'),JSON.stringify({pack:'zcode',version:4,tile:48,hero:32,icon:32,pen:96,colors:Object.keys(PAL).length,assets:assets.map(a=>({id:a.id,width:a.frames[0][0].length,height:a.frames[0].length,frames:a.frames.length,created:assetDates[a.id]}))},null,2));
 
 // PNG encoder using only Node built-ins; assets remain true palette pixels.
 function crc(buf){let c=0xffffffff;for(const b of buf){c^=b;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;}return(c^0xffffffff)>>>0;}
@@ -282,5 +467,14 @@ const zoom=new Art(sheet.w*2,sheet.h*2);for(let y=0;y<sheet.h;y++)for(let x=0;x<
 const coreSheet=new Art(288,192);coreSheet.rect(0,0,288,192,'ink');
 for(let i=0;i<24;i++){const def=assets.find(a=>a.id===`K${String(i+1).padStart(2,'0')}`);if(!def)throw new Error(`Missing core ${i+1}`);coreSheet.blit(fromRows(def.frames[0]),i%6*48+8,Math.floor(i/6)*48+8);}
 const coreZoom=new Art(1152,768);for(let y=0;y<192;y++)for(let x=0;x<288;x++)coreZoom.rect(x*4,y*4,4,4,coreSheet.p[y][x]);png(coreZoom,path.join(OUT,'CORES_K01_K24_4X.png'));
+// Văn hoá Việt check sheet: hero frames + icons at 4x.
+const vnSheet=new Art(240,40);vnSheet.rect(0,0,240,40,'ink');
+for(let f=0;f<4;f++)vnSheet.blit(fromRows(assets.find(a=>a.id==='V01').frames[f]),f*40+4,4);
+vnSheet.blit(fromRows(assets.find(a=>a.id==='V02').frames[0]),164,4);
+vnSheet.blit(fromRows(assets.find(a=>a.id==='V03').frames[0]),204,4);
+const vnZoom=new Art(960,160);for(let y=0;y<40;y++)for(let x=0;x<240;x++)vnZoom.rect(x*4,y*4,4,4,vnSheet.p[y][x]);
+png(vnZoom,path.join(OUT,'VANHOAVIET_4X.png'));
 let frameCount=0;for(const a of assets)for(const f of a.frames){frameCount++;if(f.some(r=>r.length!==f[0].length)||f.some(r=>[...r].some(p=>p!=='.'&&!PAL[p])))throw new Error(`Invalid ${a.id}`);}
-console.log(`V4_OK: ${assets.length} assets, ${frameCount} frames, ${Object.keys(PAL).length} colors. 48px tiles / 32px heroes and icons.`);
+console.log(`ZCODE_OK: ${assets.length} assets, ${frameCount} frames, ${Object.keys(PAL).length} colors. 48px tiles / 32px heroes and icons.`);
+const byDate={};for(const a of assets)(byDate[assetDates[a.id]]??=[]).push(a.id);
+console.log('Date folders: '+Object.keys(byDate).sort().map(d=>`png/${d} (${byDate[d].length} assets)`).join(', '));

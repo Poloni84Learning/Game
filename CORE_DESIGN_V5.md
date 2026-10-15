@@ -44,13 +44,13 @@ Lõi thuộc cả đội, tối đa ba lõi. Mỗi lựa chọn phải thay đ�
 
 ## Asset
 
-Vẽ đủ K01–K24 kích thước gốc 32×32, palette fantasy trầm của v4. Các icon mới: đồng hồ cát, đĩa mặt trăng, giày da, lông phượng, hạt gai, chuông, đèn trú ẩn, bình bão, đá rune, mặt nạ, ấn cổng và đèn sách.
+Vẽ đủ K01–K24 kích thước gốc 32×32, palette fantasy trầm của bộ zcode. Các icon mới: đồng hồ cát, đĩa mặt trăng, giày da, lông phượng, hạt gai, chuông, đèn trú ẩn, bình bão, đá rune, mặt nạ, ấn cổng và đèn sách.
 
 Toàn bộ bộ asset phải có PNG gốc, nguồn tái tạo, manifest và ảnh kiểm tra. Hero ba phong cách phải khác hình dáng rõ ràng; FX phải khác cơ chế và đủ frame; không coi đổi màu đơn thuần là hoàn thiện.
 
 ## Trạng thái triển khai
 
-Thiết kế: đã chốt. Icon K01–K24 đã xuất PNG và catalogue `assets/v4/CORES_K01_K24_4X.png`; generator hiện có 142 asset / 363 frame.
+Thiết kế: đã chốt. Icon K01–K24 đã xuất PNG và catalogue `assets/zcode/CORES_K01_K24_4X.png`; generator hiện có 146 asset / 373 frame. Bộ asset đổi tên v4 → zcode; PNG gom theo thư mục batch `assets/zcode/png/<nhãn>/` — ví dụ `2026-10-14-van-hoa-viet` chứa batch Văn hoá Việt (V01 chiến binh nón lá, V02 trống đồng Đông Sơn, V03 hoa sen); bản đồ ID→thư mục nằm ở `assets/zcode/ASSET_DATES.json`.
 
 K02 Chuông Sét Gỉ đã thay hiệu ứng hồi HP/trừ DEF cũ bằng trigger giảm cooldown đồng minh khi dùng skill, có test hồi quy. Luồng cận chiến đã áp kết quả HP/EXP/bắt quân và chỉ hoàn tất action tại caller; hai test mới kiểm tra trực tiếp doMove thắng/thua. Bộ test hiện có 39 mục pass.
 

@@ -1,10 +1,10 @@
 /** Local visual QA. Optional dev-only dependency: playwright.
- * Start `npm run dev`, then `node tools/preview_assets_v4.mjs`.
+ * Start `npm run dev`, then `node tools/preview_assets_zcode.mjs`.
  * Uses a fresh headless browser, never the user's browser/profile.
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs';
-const out='assets/v4/preview';fs.mkdirSync(out,{recursive:true});
+const out='assets/zcode/preview';fs.mkdirSync(out,{recursive:true});
 const browser=await chromium.launch({channel:'chrome',headless:true});
 const errors=[];
 try {

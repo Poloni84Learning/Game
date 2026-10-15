@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "assets:generate": "node tools/gen_assets_v4.mjs",
+    "assets:generate": "node tools/gen_assets_zcode.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",

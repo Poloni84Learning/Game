@@ -1,11 +1,11 @@
 // Sprite cache: string-matrix (assets.ts, heroes_v3.ts) → HTMLCanvasElement, vẽ 1 lần rồi blit.
 import type { AssetDef } from '../data/gfx/assets.ts';
-import { ASSETS_V4, PALETTE_V4 } from '../data/gfx/assets_v4.ts';
+import { ASSETS_ZCODE, PALETTE_ZCODE } from '../data/gfx/assets_zcode.ts';
 import type { ClassId, TribeId } from '../core/types.ts';
 
 const cache = new Map<string, HTMLCanvasElement>(); // key `${id}:${frame}` — dựng động runtime
 
-// V4 has twice the authored pixels: tile 48, hero/icon 32, pen 96.
+// zcode pack has twice the authored pixels: tile 48, hero/icon 32, pen 96.
 // Keep the same logical board size: draw native pixels, rather than 2x old pixels.
 export const SPR = 1;
 
@@ -22,7 +22,7 @@ function rasterize(def: AssetDef, frame: number): HTMLCanvasElement {
     for (let x = 0; x < w; x++) {
       const ch = rows[y][x];
       if (ch === '.') continue;
-      ctx.fillStyle = PALETTE_V4[ch] ?? '#f0f';
+      ctx.fillStyle = PALETTE_ZCODE[ch] ?? '#f0f';
       ctx.fillRect(x * SPR, y * SPR, SPR, SPR);
     }
   }
@@ -71,9 +71,9 @@ export function heroSprite(tribe: TribeId, cls: ClassId, frame = 0): HTMLCanvasE
   return sprite(HERO_SETS[heroStyle][tribe][cls], frame);
 }
 
-const V4_BY_ID: Record<string, AssetDef> = Object.fromEntries(ASSETS_V4.map((d) => [d.id, d]));
+const ZCODE_BY_ID: Record<string, AssetDef> = Object.fromEntries(ASSETS_ZCODE.map((d) => [d.id, d]));
 
-const DEFS = V4_BY_ID;
+const DEFS = ZCODE_BY_ID;
 
 /** DOM copy: never move a cached canvas into the UI. */
 export function uiSprite(source: HTMLCanvasElement, size = 32): HTMLCanvasElement {
